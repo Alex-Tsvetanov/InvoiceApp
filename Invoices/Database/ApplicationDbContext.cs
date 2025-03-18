@@ -39,6 +39,26 @@ namespace InvoiceApp.Database
                         .WithMany()
                         .HasForeignKey(i => i.TotalAmountCurrencyId);
 
+            modelBuilder.Entity<Invoice>()
+                        .HasMany(i => i.InvoiceLines)
+                        .WithOne()
+                        .HasForeignKey(i => i.InvoiceId);
+
+            modelBuilder.Entity<Invoice>()
+                        .HasOne(i => i.Customer)
+                        .WithMany()
+                        .HasForeignKey(i => i.CustomerId);
+
+            modelBuilder.Entity<Invoice>()
+                        .HasOne(i => i.Customer)
+                        .WithMany()
+                        .HasForeignKey(i => i.CustomerId);
+
+            modelBuilder.Entity<InvoiceLine>()
+                        .HasOne(il => il.Item)
+                        .WithMany()
+                        .HasForeignKey(il => il.ItemId);
+
             modelBuilder.Entity<Item>().Property(e => e.Id).ValueGeneratedOnAdd();
             modelBuilder.Entity<Currency>().Property(e => e.Id).ValueGeneratedOnAdd();
             modelBuilder.Entity<ExchangeRate>().Property(e => e.Id).ValueGeneratedOnAdd();

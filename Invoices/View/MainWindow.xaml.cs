@@ -1,7 +1,13 @@
 ﻿using InvoiceApp.Database;
 using InvoiceApp.ViewModel;
+using System.IO.Packaging;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Xps.Packaging;
+using System.Windows.Xps;
+using System.Windows.Input;
+using CommunityToolkit.Mvvm.Input;
 
 namespace InvoiceApp.View
 {

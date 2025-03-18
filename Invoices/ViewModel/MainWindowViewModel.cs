@@ -10,6 +10,10 @@ using System.Windows.Shapes;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows.Media.Animation;
+using System.IO.Packaging;
+using System.IO;
+using System.Windows.Xps;
+using System.Windows.Xps.Packaging;
 
 namespace InvoiceApp.ViewModel
 {
@@ -183,7 +187,7 @@ namespace InvoiceApp.ViewModel
         }
 
         [RelayCommand]
-        private void GenerateInvoice()
+        internal void GenerateInvoice()
         {
             if (SelectedCustomer != null && InvoiceLines.Any())
             {
@@ -192,20 +196,53 @@ namespace InvoiceApp.ViewModel
                     Number = InvoiceNumber,
                     Date = InvoiceDate,
                     CustomerId = SelectedCustomer.Id,
-                    Customer = SelectedCustomer,
                     TotalAmount = TotalAmount,
-                    InvoiceLines = InvoiceLines.Select(x => new InvoiceLine()
-                    {
-                        ItemId = x.Item.Id,
-                        Quantity = x.Quantity,
-                        UnitPrice = x.UnitPrice,
-                        TotalPrice = x.TotalPrice
-                    }).ToList()
+                    TotalAmountCurrencyId = SelectedInvoiceCurrency.Id,
+                    InvoiceLines = new List<InvoiceLine>()
                 };
 
                 _context.Invoices.Add(invoice);
                 _context.SaveChanges();
 
+                var invoiceLines = InvoiceLines.Select(x => new InvoiceLine()
+                {
+                    InvoiceId = invoice.Id,
+                    ItemId = x.Item.Id,
+                    Quantity = x.Quantity,
+                    UnitPrice = x.UnitPrice,
+                    TotalPrice = x.TotalPrice
+                }).ToList();
+
+                _context.InvoiceLines.AddRange(invoiceLines);
+                _context.SaveChanges();
+            
+                /*
+                  *  Convert WPF -> XPS -> PDF
+                  */
+                MemoryStream lMemoryStream = new MemoryStream();
+                Package package = Package.Open(lMemoryStream, FileMode.Create);
+                XpsDocument doc = new XpsDocument(package);
+                XpsDocumentWriter writer = XpsDocument.CreateXpsDocumentWriter(doc);
+
+                // This is your window
+                writer.Write(Application.Current.MainWindow);
+
+                doc.Close();
+                package.Close();
+
+                // Convert 
+                MemoryStream outStream = new MemoryStream();
+                PdfSharp.Xps.XpsConverter.Convert(lMemoryStream, outStream, false);
+
+                // Write pdf file
+                FileStream fileStream = new FileStream("invoice-" + getInvoiceNumber() + ".pdf", FileMode.Create);
+                outStream.CopyTo(fileStream);
+
+                // Clean up
+                outStream.Flush();
+                outStream.Close();
+                fileStream.Flush();
+                fileStream.Close();
                 // Допълнителна логика за печат или експорт на фактурата
                 // ...
 
@@ -245,6 +282,11 @@ namespace InvoiceApp.ViewModel
                 return null;
             }
             return Math.Round(amount * exchangeRate.Rate, 3);
+        }
+
+        internal string getInvoiceNumber()
+        {
+            return InvoiceNumber;
         }
     }
 }

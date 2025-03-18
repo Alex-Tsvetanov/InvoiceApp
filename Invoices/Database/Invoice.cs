@@ -10,11 +10,12 @@ namespace InvoiceApp.Database
         public int Id { get; set; }
         public string Number { get; set; }
         public DateTime Date { get; set; }
-        public int SellerId { get; set; }
         public int CustomerId { get; set; }
         public decimal TotalAmount { get; set; }
         public int TotalAmountCurrencyId { get; set; }
         public Currency TotalAmountCurrency { get; set; }
+        
+        [ForeignKey("CustomerId")] 
         public Customer Customer { get; set; }
         public ICollection<InvoiceLine> InvoiceLines { get; set; }
     }
