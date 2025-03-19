@@ -16,6 +16,18 @@ namespace InvoiceApp.Model
             set
             {
                 SetProperty(ref _convertedCost, value);
+                SetProperty(ref _convertedCostWithTax, value * 1.2m);
+            }
+        }
+
+        private decimal? _convertedCostWithTax;
+
+        public decimal? ConvertedCostWithTax
+        {
+            get => _convertedCostWithTax;
+            set
+            {
+                SetProperty(ref _convertedCostWithTax, value);
             }
         }
     }

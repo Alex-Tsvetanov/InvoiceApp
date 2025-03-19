@@ -64,6 +64,8 @@
                 <DataGridTextColumn Header="Original Currency" IsReadOnly="True" Binding="{Binding Item.Currency.Code, Mode=OneWay}"/>
                 <DataGridTextColumn Header="Total Price (Invoice Currency)" IsReadOnly="True"
                     Binding="{Binding ConvertedCost, Converter={StaticResource CurrencyConverter}, ConverterParameter=2}"/>
+                <DataGridTextColumn Header="Total Price With Tax (Invoice Currency)" IsReadOnly="True"
+                    Binding="{Binding ConvertedCostWithTax, Converter={StaticResource CurrencyConverter}, ConverterParameter=2}"/>
             </DataGrid.Columns>
         </DataGrid>
         <StackPanel Orientation="Horizontal" Margin="10" Grid.Row="3">

@@ -20,6 +20,8 @@ namespace InvoiceApp.ViewModel
     public partial class MainWindowViewModel : ObservableObject
     {
         private readonly ApplicationDbContext _context;
+        private readonly decimal bigQuantityDiscount = -0.10m;
+        private readonly decimal bigSaleDiscount = 0.80m;
 
         public ObservableCollection<Item> Items { get; } = new();
         public ObservableCollection<Customer> Customers { get; } = new();
@@ -83,6 +85,10 @@ namespace InvoiceApp.ViewModel
         private void updateTotalAmount(object? sender, ListChangedEventArgs e)
         {
             TotalAmount = InvoiceLines.Select(x => x.ConvertedCost == null ? 0 : (decimal)x.ConvertedCost).Sum();
+            if (TotalAmount > 10000m)
+            {
+                TotalAmount = TotalAmount * bigSaleDiscount;
+            }
         }
 
         private void updateConversions(object? sender, ListChangedEventArgs e)
@@ -173,13 +179,15 @@ namespace InvoiceApp.ViewModel
                 return;
             }
 
+            decimal totalPrice = SelectedItem.Price * Quantity * (Decimal.Parse((Quantity >= 10).ToString()) * bigQuantityDiscount + 1);
+
             var line = new Model.InvoiceLine
             {
                 Item = SelectedItem,
                 Quantity = Quantity,
                 UnitPrice = SelectedItem.Price,
-                TotalPrice = SelectedItem.Price * Quantity,
-                ConvertedCost = ConvertedAmount(SelectedItem.Price * Quantity, SelectedItem.Currency, SelectedInvoiceCurrency)
+                TotalPrice = totalPrice,
+                ConvertedCost = ConvertedAmount(totalPrice, SelectedItem.Currency, SelectedInvoiceCurrency)
             };
             InvoiceLines.Add(line);
             UpdateNewItemsSelection();
