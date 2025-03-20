@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System.Reflection.Metadata;
 
 namespace InvoiceApp.Database
@@ -19,11 +20,26 @@ namespace InvoiceApp.Database
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Item>()
-                        .HasOne(i => i.Currency)
-                        .WithMany()
-                        .HasForeignKey(i => i.CurrencyId);
+            List<Type> entityTypes = new List<Type>
+            {
+                typeof(Item),
+                typeof(ExchangeRate),
+                typeof(Invoice),
+                typeof(InvoiceLine),
+                typeof(Customer)
+            };
 
+            foreach (var itemType in entityTypes)
+            {
+                string mapperTypeName = itemType.Name + "Mapper";
+                Type mapperType = Type.GetType(mapperTypeName) ?? throw new Exception("");
+                var mapperInstance = Activator.CreateInstance(mapperType);
+                var configureMethod = mapperType.GetMethod("Configure") ?? throw new Exception("");
+                var entityTypeBuilderType = typeof(EntityTypeBuilder<>).MakeGenericType(itemType);
+                var entityTypeBuilderInstance = modelBuilder.Entity(itemType);
+                configureMethod.Invoke(mapperInstance, [entityTypeBuilderInstance]);
+            }
+            
             modelBuilder.Entity<ExchangeRate>()
                         .HasOne(i => i.FromCurrency)
                         .WithMany()
@@ -67,7 +83,7 @@ namespace InvoiceApp.Database
             modelBuilder.Entity<InvoiceLine>().Property(e => e.Id).ValueGeneratedOnAdd();
 
             // Добавяме валути
-            foreach (var data in new List<Currency> {
+            foreach (var data in new List<ICurrency> {
                 new Currency { Id = 1, Code = "USD", Name = "US Dollar" },
                 new Currency { Id = 2, Code = "EUR", Name = "Euro" },
                 new Currency { Id = 3, Code = "BGN", Name = "Bulgarian Lev" }
