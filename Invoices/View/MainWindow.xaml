@@ -13,6 +13,11 @@
     </Window.DataContext>
     <Window.Resources>
         <converters:CurrencyConverter x:Key="CurrencyConverter"/>
+        <converters:CurrencyPresenter x:Key="CurrencyPresenter"/>
+        <Style TargetType="TextBlock">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsHitTestVisible" Value="False"/>
+        </Style>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -22,27 +27,29 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal" Margin="10">
-            <Label Content="Invoice Number:" Margin="5"/>
-            <TextBox Text="{Binding InvoiceNumber, Mode=TwoWay}" Width="100" Margin="5"/>
-            <Label Content="Invoice Date:" Margin="5"/>
-            <DatePicker SelectedDate="{Binding InvoiceDate, Mode=TwoWay}" Margin="5"/>
+            <TextBlock Text="Invoice Number:" Margin="5"/>
+            <TextBox Text="{Binding Invoice.InvoiceNumber, Mode=TwoWay}" Width="100" Margin="5"/>
+            <TextBlock Text="Invoice Date:" Margin="5"/>
+            <DatePicker SelectedDate="{Binding Invoice.InvoiceDate, Mode=TwoWay}" Margin="5"/>
         </StackPanel>
         <StackPanel Orientation="Horizontal" Margin="10" Grid.Row="1">
-            <Label Content="Invoice Currency:" Margin="5"/>
-            <ComboBox ItemsSource="{Binding InvoiceCurrencies}"
-              SelectedItem="{Binding SelectedInvoiceCurrency, Mode=TwoWay}"
+            <TextBlock Text="Invoice Currency:" Margin="5"/>
+            <ComboBox
+              ItemsSource="{Binding InvoiceCurrencies}"
+              SelectedItem="{Binding Invoice.Currency, Mode=TwoWay}"
               DisplayMemberPath="Name"
               Width="100"
-              Margin="5"/>
+              Margin="5">
+            </ComboBox>
         </StackPanel>
-        <DataGrid ItemsSource="{Binding InvoiceLines}"
+        <DataGrid ItemsSource="{Binding Invoice.InvoiceLines}"
                   AutoGenerateColumns="False"
                   Grid.Row="2"
                   Margin="10"
                   x:Name="InvoiceLines">
             <DataGrid.Columns>
                 <DataGridComboBoxColumn Header="Item"
-                                SelectedItemBinding="{Binding Item, Mode=TwoWay}"
+                                SelectedItemBinding="{Binding SelectedItem, Mode=TwoWay}"
                                 DisplayMemberPath="Name">
                     <DataGridComboBoxColumn.ElementStyle>
                         <Style TargetType="ComboBox">
@@ -57,29 +64,104 @@
                         </Style>
                     </DataGridComboBoxColumn.EditingElementStyle>
                 </DataGridComboBoxColumn>
-                <DataGridTextColumn Header="Quantity" Binding="{Binding Quantity, Mode=TwoWay}"/>
-                <DataGridTextColumn Header="Unit Price" IsReadOnly="True" Binding="{Binding UnitPrice, Mode=OneWay}"/>
-                <DataGridTextColumn Header="Total Price" IsReadOnly="True"
-                    Binding="{Binding TotalPrice, Converter={StaticResource CurrencyConverter}, ConverterParameter=3}"/>
-                <DataGridTextColumn Header="Original Currency" IsReadOnly="True" Binding="{Binding Item.Currency.Code, Mode=OneWay}"/>
-                <DataGridTextColumn Header="Total Price (Invoice Currency)" IsReadOnly="True"
-                    Binding="{Binding ConvertedCost, Converter={StaticResource CurrencyConverter}, ConverterParameter=2}"/>
-                <DataGridTextColumn Header="Total Price With Tax (Invoice Currency)" IsReadOnly="True"
-                    Binding="{Binding ConvertedCostWithTax, Converter={StaticResource CurrencyConverter}, ConverterParameter=2}"/>
+                <DataGridTemplateColumn Header="Quantity">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate> 
+                           <Grid>
+                               <Grid.ColumnDefinitions>
+                                   <ColumnDefinition Width="*" />
+                                   <ColumnDefinition Width="30" />
+                               </Grid.ColumnDefinitions>
+                               <TextBox Text="{Binding Quantity, Mode=TwoWay}" Grid.Column="0" TextChanged="QunatityTextBox_TextChanged" />
+                               <TextBlock HorizontalAlignment="Center" Text="{Binding InvoiceItem.Unit}" Grid.Column="1" />
+                           </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Price per unit">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding InvoiceItem.UnitPrice.Amount, StringFormat=N2}"/>
+                                <TextBlock Text=" "/>
+                                <TextBlock Text="{Binding InvoiceItem.UnitPrice.CurrencyObj.Code}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Total price">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding TotalPrice.Amount, StringFormat=N2}"/>
+                                <TextBlock Text=" "/>
+                                <TextBlock Text="{Binding TotalPrice.CurrencyObj.Code}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn>
+                    <DataGridTemplateColumn.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Price"/>
+                            <TextBlock Text="("/>
+                            <TextBlock Text="{Binding DataContext.Invoice.Currency.Code, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                            <TextBlock Text=")"/>
+                        </StackPanel>
+                    </DataGridTemplateColumn.Header>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding ConvertedTotalPrice.Amount, StringFormat=N2}"/>
+                                <TextBlock Text=" "/>
+                                <TextBlock Text="{Binding ConvertedTotalPrice.CurrencyObj.Code}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn>
+                    <DataGridTemplateColumn.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Price with Tax"/>
+                            <TextBlock Text="("/>
+                            <TextBlock Text="{Binding DataContext.Invoice.Currency.Code, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                            <TextBlock Text=")"/>
+                        </StackPanel>
+                    </DataGridTemplateColumn.Header>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding ConvertedTotalPriceWithTax.Amount, StringFormat=N2}"/>
+                                <TextBlock Text=" "/>
+                                <TextBlock Text="{Binding ConvertedTotalPriceWithTax.CurrencyObj.Code}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Remove" IsReadOnly="True">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Content="X" Click="Delete_Click" Margin="5"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
         <StackPanel Orientation="Horizontal" Margin="10" Grid.Row="3">
-            <Label Content="Customer:" Margin="5"/>
+            <TextBlock Text="Customer:" Margin="5"/>
             <ComboBox ItemsSource="{Binding Customers}"
                       SelectedItem="{Binding SelectedCustomer, Mode=TwoWay}"
                       DisplayMemberPath="Name"
                       Width="200"
                       Margin="5"/>
-            <Label Content="Total Amount:" Margin="5"/>
-            <TextBox Text="{Binding TotalAmount, Converter={StaticResource CurrencyConverter}, ConverterParameter=2}"
+            <TextBlock Text="Total Amount:" Margin="5"/>
+            <TextBlock Text="{Binding DataContext.Invoice.TotalAmount.Amount, StringFormat=N2, RelativeSource={RelativeSource AncestorType=Window}}"
                      Width="100"
-                     Margin="5"
-                     IsReadOnly="True"/>
+                     Margin="5" />
+            <TextBlock Text=" "/>
+            <TextBlock Text="{Binding DataContext.Invoice.TotalAmount.CurrencyObj.Code, RelativeSource={RelativeSource AncestorType=Window}}"
+                     Width="100"
+                     Margin="5" />
             <Button Content="Generate Invoice"
                     Command="{Binding GenerateInvoiceCommand}"
                     Margin="5"/>

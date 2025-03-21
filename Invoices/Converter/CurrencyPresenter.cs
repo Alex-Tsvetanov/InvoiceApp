@@ -1,23 +1,22 @@
-﻿using System.Globalization;
+﻿using InvoiceApp.Services.Currencies;
+using System.Globalization;
 using System.Windows.Data;
 
 namespace InvoiceApp.Converter
 {
-    public class CurrencyConverter : IValueConverter
+    public class CurrencyPresenter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
+            Console.WriteLine(value);
             if (value is null)
             {
                 return "N/A";
             }
 
-            if (parameter is null)
-            {
-                parameter = 3;
-            }
-
-            return ((decimal)value).ToString("N" + parameter.ToString());
+            Console.WriteLine(((Currency)value));
+            Console.WriteLine(((Currency)value).Code);
+            return ((Currency)value).Code;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

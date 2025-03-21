@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using InvoiceApp.Services.Money;
+using InvoiceApp.Services.Currencies;
 
 namespace InvoiceApp.Database;
 
@@ -48,9 +50,18 @@ public class InvoiceLine : ObservableObject
     }
 
     [NotMapped]
-    public PriceAmount TotalPrice
+    public IMoney TotalPrice
     {
-        get => Item.Amount * Quantity;
+        get
+        {
+            return Item.UnitPrice switch
+            {
+                Money<BGN> bgnMoney => bgnMoney * Quantity,
+                Money<EUR> eurMoney => eurMoney * Quantity,
+                Money<USD> usdMoney => usdMoney * Quantity,
+                _ => throw new Exception("Unknown currency"),
+            };
+        }
     }
 
     public class Mapper : IEntityTypeConfiguration<InvoiceLine>

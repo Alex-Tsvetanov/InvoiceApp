@@ -1,300 +1,170 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.EntityFrameworkCore;
 using System.Collections.ObjectModel;
 using InvoiceApp.Database;
 using System.Windows;
-using System.Windows.Data;
 using System.Windows.Controls;
-using System.Windows.Shapes;
 using System.Collections.Specialized;
+using InvoiceApp.Services.Currencies;
+using InvoiceApp.Services;
+using System.Windows.Threading;
 using System.ComponentModel;
-using System.Windows.Media.Animation;
-using System.IO.Packaging;
-using System.IO;
-using System.Windows.Xps;
-using System.Windows.Xps.Packaging;
 
 namespace InvoiceApp.ViewModel
 {
     public partial class MainWindowViewModel : ObservableObject
     {
-        private readonly ApplicationDbContext _context;
-        private readonly decimal bigQuantityDiscount = -0.10m;
-        private readonly decimal bigSaleDiscount = 0.80m;
+        private readonly DatabaseService databaseService;
 
+        /// <summary>
+        /// The invoice data as it is being filled in the UI
+        /// </summary>
+        public ViewModelInvoice Invoice { get; }
+        
+        /// <summary>
+        /// The items available for selection in the UI
+        /// </summary>
         public ObservableCollection<Item> Items { get; } = new();
+        
+        /// <summary>
+        /// The customers available for selection in the UI
+        /// </summary>
         public ObservableCollection<Customer> Customers { get; } = new();
-        public BindingList<Model.InvoiceLine> InvoiceLines { get; } = new();
+        
+        /// <summary>
+        /// The invoice currencies available for selection in the UI
+        /// </summary>
+        public ObservableCollection<Currency> InvoiceCurrencies { get; } = new();
 
         [ObservableProperty]
-        private Item _selectedItem;
-
-        [ObservableProperty]
-        private InvoiceLine _selectedInvoiceLine;
+        public Item _selectedItem;
 
         [ObservableProperty]
         private Customer _selectedCustomer;
 
         [ObservableProperty]
-        private decimal _quantity;
+        public decimal _quantity;
 
-        [ObservableProperty]
-        private string _invoiceNumber;
-
-        [ObservableProperty]
-        private DateTime _invoiceDate = DateTime.Now;
-
-        [ObservableProperty]
-        private decimal _totalAmount;
-        public ObservableCollection<Currency> InvoiceCurrencies { get; } = new();
-
-        private Currency _selectedInvoiceCurrency;
-
-        public Currency SelectedInvoiceCurrency
-        {
-            get 
-            {
-                return _selectedInvoiceCurrency;
-            }
-            set 
-            {
-                if (_selectedInvoiceCurrency != value)
-                {
-                    SetProperty(ref _selectedInvoiceCurrency, value);
-                    updateConversions(null, null);
-                }
-            }
-        }
-
-        public ObservableCollection<Item> AvailableItems { get; } = new();
-
-        private InvoiceLine? CurrentlyDropDownOpened = null;
-
-        public ObservableCollection<Item> AvailableItemsWithCurrent { get; } = new();
+        /// <summary>
+        /// The currently selected invoice line item in the UI
+        /// </summary>
+        private ViewModelInvoice.ViewModelInvoiceLine? CurrentlyDropDownOpened = null;
 
         public MainWindowViewModel()
         {
-            _context = new ApplicationDbContext();
-            _context.Database.EnsureCreated();
+            databaseService = new DatabaseService(new ApplicationDbContext(), -0.2m, -0.1m, 0.2m);
+            Invoice = new ViewModelInvoice(databaseService);
+            Invoice.InvoiceLines.ListChanged += InvoiceLines_ListChanged;
             LoadData();
-            UpdateNewItemsSelection();
-            InvoiceLines.ListChanged += updateConversions;
+            AddEmptyInvoiceLine();
+        }
+        private void InvoiceLines_ListChanged(object sender, ListChangedEventArgs e)
+        {
+            if (e.ListChangedType == ListChangedType.ItemAdded)
+            {
+                ViewModelInvoice.ViewModelInvoiceLine newItem = Invoice.InvoiceLines[e.NewIndex];
+                newItem.PropertyChanged += InvoiceLines_PropertyChanged;
+            }
+            OnChange();
         }
 
-        private void updateTotalAmount(object? sender, ListChangedEventArgs e)
+        private void InvoiceLines_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            TotalAmount = InvoiceLines.Select(x => x.ConvertedCost == null ? 0 : (decimal)x.ConvertedCost).Sum();
-            if (TotalAmount > 10000m)
+            ViewModelInvoice.ViewModelInvoiceLine changedItem = (ViewModelInvoice.ViewModelInvoiceLine)sender;
+            OnChange();
+        }
+
+        private void OnChange()
+        {
+            Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(EnsureEmptyInvoiceLine));
+        }
+
+        private void EnsureEmptyInvoiceLine()
+        {
+            if (Invoice.InvoiceLines.Count == 0 || !Invoice.InvoiceLines[Invoice.InvoiceLines.Count - 1].IsEmpty())
             {
-                TotalAmount = TotalAmount * bigSaleDiscount;
+                AddEmptyInvoiceLine();
             }
         }
 
-        private void updateConversions(object? sender, ListChangedEventArgs e)
+        private void AddEmptyInvoiceLine()
         {
-            foreach (var line in InvoiceLines)
-            {
-                if (line.Item is null || line.Item.Currency is null)
-                {
-                    line.ConvertedCost = null;
-                }
-                else
-                {
-                    line.ConvertedCost = ConvertedAmount(line.TotalPrice, line.Item.Currency, SelectedInvoiceCurrency);
-                }
-            }
-            updateTotalAmount(null, null);
+            Invoice.InvoiceLines.Add(new ViewModelInvoice.ViewModelInvoiceLine(Invoice));
         }
 
         private void LoadData()
         {
-            _context.Items.Include(i => i.Currency).Load();
-
-            foreach (var item in _context.Items.Local.ToObservableCollection())
+            foreach (var item in databaseService.Items)
             {
                 Items.Add(item);
             }
 
-            _context.Customers.Load();
-            foreach (var customer in _context.Customers.Local.ToObservableCollection())
+            foreach (var customer in databaseService.Customers)
             {
                 Customers.Add(customer);
             }
 
-            // Load currencies
-            _context.Currencies.Load();
-            foreach (var currency in _context.Currencies.Local.ToObservableCollection())
+            foreach (var currency in databaseService.Currencies)
             {
                 InvoiceCurrencies.Add(currency);
             }
 
             // Set default currency
-            SelectedInvoiceCurrency = InvoiceCurrencies.FirstOrDefault();
-        }
-        private void UpdateNewItemsSelection()
-        {
-            AvailableItems.Clear();
-            var addedItemIds = InvoiceLines.Where(line => line is not null && line.Item is not null).Select(line => line.Item.Id).ToList();
-            var availableItems = _context.Items.Local.Where(item => !addedItemIds.Contains(item.Id)).ToList();
-
-            foreach (var item in availableItems)
-            {
-                AvailableItems.Add(item);
-            }
-            OnPropertyChanged(nameof(AvailableItems));
-            UpdateAddedItemsSelection();
-            OnPropertyChanged(nameof(AvailableItemsWithCurrent));
-        }
-
-        private void UpdateAddedItemsSelection()
-        {
-            AvailableItemsWithCurrent.Clear();
-
-            foreach (var item in AvailableItems)
-            {
-                AvailableItemsWithCurrent.Add(item);
-            }
-
-            if (CurrentlyDropDownOpened is not null && AvailableItemsWithCurrent.Where(item => item is not null && item.Id != CurrentlyDropDownOpened?.Id).Count() == 0)
-            {
-                AvailableItemsWithCurrent.Add(CurrentlyDropDownOpened.Item);
-            }
-
-            OnPropertyChanged(nameof(AvailableItemsWithCurrent));
+            Invoice.Currency = InvoiceCurrencies.FirstOrDefault();
         }
 
         [RelayCommand]
         private void AddLine()
         {
-            if (SelectedItem == null)
-            {
-                MessageBox.Show("Please select an item.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            if (Quantity <= 0)
-            {
-                MessageBox.Show("Quantity must be greater than zero.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            decimal totalPrice = SelectedItem.Price * Quantity * (Decimal.Parse((Quantity >= 10).ToString()) * bigQuantityDiscount + 1);
-
-            var line = new Model.InvoiceLine
+            var line = new InvoiceLine
             {
                 Item = SelectedItem,
-                Quantity = Quantity,
-                UnitPrice = SelectedItem.Price,
-                TotalPrice = totalPrice,
-                ConvertedCost = ConvertedAmount(totalPrice, SelectedItem.Currency, SelectedInvoiceCurrency)
+                Quantity = Quantity
             };
-            InvoiceLines.Add(line);
-            UpdateNewItemsSelection();
+            Invoice.AddInvoiceLine(line);
             Quantity = 0; // Reset quantity after adding line
         }
 
         [RelayCommand]
-        internal void GenerateInvoice()
+        internal async void GenerateInvoice()
         {
-            if (SelectedCustomer != null && InvoiceLines.Any())
+            try
             {
-                var invoice = new Invoice
-                {
-                    Number = InvoiceNumber,
-                    Date = InvoiceDate,
-                    CustomerId = SelectedCustomer.Id,
-                    TotalAmount = TotalAmount,
-                    TotalAmountCurrencyId = SelectedInvoiceCurrency.Id,
-                    InvoiceLines = new List<InvoiceLine>()
-                };
-
-                _context.Invoices.Add(invoice);
-                _context.SaveChanges();
-
-                var invoiceLines = InvoiceLines.Select(x => new InvoiceLine()
-                {
-                    InvoiceId = invoice.Id,
-                    ItemId = x.Item.Id,
-                    Quantity = x.Quantity,
-                    UnitPrice = x.UnitPrice,
-                    TotalPrice = x.TotalPrice
-                }).ToList();
-
-                _context.InvoiceLines.AddRange(invoiceLines);
-                _context.SaveChanges();
-            
-                /*
-                  *  Convert WPF -> XPS -> PDF
-                  */
-                MemoryStream lMemoryStream = new MemoryStream();
-                Package package = Package.Open(lMemoryStream, FileMode.Create);
-                XpsDocument doc = new XpsDocument(package);
-                XpsDocumentWriter writer = XpsDocument.CreateXpsDocumentWriter(doc);
-
-                // This is your window
-                writer.Write(Application.Current.MainWindow);
-
-                doc.Close();
-                package.Close();
-
-                // Convert 
-                MemoryStream outStream = new MemoryStream();
-                PdfSharp.Xps.XpsConverter.Convert(lMemoryStream, outStream, false);
-
-                // Write pdf file
-                FileStream fileStream = new FileStream("invoice-" + getInvoiceNumber() + ".pdf", FileMode.Create);
-                outStream.CopyTo(fileStream);
-
-                // Clean up
-                outStream.Flush();
-                outStream.Close();
-                fileStream.Flush();
-                fileStream.Close();
-                // Допълнителна логика за печат или експорт на фактурата
-                // ...
-
-                InvoiceLines.Clear();
-                TotalAmount = 0;
-                InvoiceNumber = "";
+                await databaseService.RegisterInvoice(Invoice);
+                databaseService.GeneratePdf("invoice-" + Invoice.InvoiceNumber);
+                Invoice.Clear();
+                LoadData();
+            }
+            catch(Exception e)
+            {
+                MessageBox.Show(e.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-        internal void InvoiceLineItemChange(DataGrid grid, Item newSelection)
+        internal void InvoiceLineItemChange(ViewModelInvoice.ViewModelInvoiceLine selectedItem, Item newSelection)
         {
             if (newSelection is null) return;
-            InvoiceLine selectedItem = grid.CurrentItem as Model.InvoiceLine;
             if (selectedItem is null) return;
-            decimal oldCost = selectedItem.TotalPrice;
-            selectedItem.Item = newSelection;
-            UpdateNewItemsSelection();
+            selectedItem.InvoiceItem = newSelection;
         }
-        internal void InvoiceLineContextMenuOpening(Model.InvoiceLine? invoiceLine)
+        internal void InvoiceLineContextMenuOpening(ViewModelInvoice.ViewModelInvoiceLine? invoiceLine)
         {
             CurrentlyDropDownOpened = invoiceLine;
-            UpdateAddedItemsSelection();
         }
-        internal decimal? ConvertedAmount(decimal amount, Currency inputCurrency, Currency outputCurrency)
+        internal void QunatityTextBox_TextChanged(TextBox sender, ViewModelInvoice.ViewModelInvoiceLine invoiceLine)
         {
-            if (inputCurrency == outputCurrency)
+            try
             {
-                return amount;
+                invoiceLine.Quantity = decimal.Parse(sender.Text);
             }
-            if (inputCurrency == null || outputCurrency == null)
+            catch(FormatException)
             {
-                return null;
+                invoiceLine.Quantity = 0;
             }
-            var exchangeRate = _context.ExchangeRates
-                .FirstOrDefault(er => er.FromCurrency == inputCurrency && er.ToCurrency == outputCurrency);
-            if (exchangeRate == null)
-            {
-                return null;
-            }
-            return Math.Round(amount * exchangeRate.Rate, 3);
         }
-
-        internal string getInvoiceNumber()
+        internal void InvoiceCurrency_SelectionChanged(Currency? currency)
         {
-            return InvoiceNumber;
+            if (currency != null)
+                Invoice.Currency = currency;
         }
     }
 }

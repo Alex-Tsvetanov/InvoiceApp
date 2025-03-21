@@ -1,13 +1,10 @@
 ﻿using InvoiceApp.Database;
+using InvoiceApp.Services;
+using InvoiceApp.Services.Currencies;
 using InvoiceApp.ViewModel;
-using System.IO.Packaging;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Xps.Packaging;
-using System.Windows.Xps;
-using System.Windows.Input;
-using CommunityToolkit.Mvvm.Input;
+using static InvoiceApp.Services.ViewModelInvoice;
 
 namespace InvoiceApp.View
 {
@@ -22,11 +19,30 @@ namespace InvoiceApp.View
         }
         private void InvoiceLineItemChange(object sender, SelectionChangedEventArgs e)
         {
-            (this.DataContext as MainWindowViewModel).InvoiceLineItemChange((FindName("InvoiceLines") as DataGrid), (sender as ComboBox).SelectedItem as Item);
+            (this.DataContext as MainWindowViewModel).InvoiceLineItemChange((FindName("InvoiceLines") as DataGrid).CurrentItem as ViewModelInvoice.ViewModelInvoiceLine, (sender as ComboBox).SelectedItem as Item);
         }
         private void InvoiceLineContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
-            (this.DataContext as MainWindowViewModel).InvoiceLineContextMenuOpening((sender as DataGrid).SelectedItem as Model.InvoiceLine);
+            (this.DataContext as MainWindowViewModel).InvoiceLineContextMenuOpening((sender as DataGrid).SelectedItem as ViewModelInvoiceLine);
+        }
+
+        private void QunatityTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            // Handle the text changed event here
+            TextBox textBox = (TextBox)sender;
+            // Access the DataGrid row's data context if needed
+            ViewModelInvoice.ViewModelInvoiceLine invoiceLine = (ViewModelInvoice.ViewModelInvoiceLine)textBox.DataContext;
+
+            (this.DataContext as MainWindowViewModel).QunatityTextBox_TextChanged(textBox, invoiceLine);
+        }
+
+        private void Delete_Click(object sender, RoutedEventArgs e)
+        {
+            // Handle the text changed event here
+            Button button = (Button)sender;
+            // Access the DataGrid row's data context if needed
+            ViewModelInvoice.ViewModelInvoiceLine invoiceLine = (ViewModelInvoice.ViewModelInvoiceLine)button.DataContext;
+            invoiceLine.Remove();
         }
     }
 }

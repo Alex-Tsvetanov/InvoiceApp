@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using CommunityToolkit.Mvvm.ComponentModel;
+using InvoiceApp.Services.Currencies;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -17,36 +18,36 @@ public class ExchangeRate : ObservableObject
     public DateTime Date { get; set; }
 
     [NotMapped]
-    public Type FromCurrency
+    public Currency FromCurrency
     {
         get
         {
             if (!string.IsNullOrEmpty(FromCurrencyName))
             {
-                return Type.GetType(FromCurrencyName);
+                return CurrencyFactory.fromName(FromCurrencyName);
             }
             return null;
         }
         set
         {
-            FromCurrencyName = value?.FullName;
+            FromCurrencyName = value.Name;
         }
     }
 
     [NotMapped]
-    public Type ToCurrency
+    public Currency ToCurrency
     {
         get
         {
             if (!string.IsNullOrEmpty(ToCurrencyName))
             {
-                return Type.GetType(ToCurrencyName);
+                return CurrencyFactory.fromName(ToCurrencyName);
             }
             return null;
         }
         set
         {
-            ToCurrencyName = value?.FullName;
+            ToCurrencyName = value.Name;
         }
     }
 
