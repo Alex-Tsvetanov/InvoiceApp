@@ -20,7 +20,7 @@ namespace InvoiceApp.View
     /// </summary>
     public partial class AlternativeMainWindow : Window
     {
-        public AlternativeMainWindow(MainWindowViewModel viewModel)
+        public AlternativeMainWindow(object viewModel)
         {
             InitializeComponent();
             this.DataContext = viewModel;

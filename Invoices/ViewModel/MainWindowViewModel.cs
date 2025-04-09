@@ -84,6 +84,7 @@ namespace InvoiceApp.ViewModel
 
         private void OnChange()
         {
+            OnPropertyChanged(nameof(InvoiceLinesToDisplay));
             Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(EnsureEmptyInvoiceLine));
         }
 

@@ -34,15 +34,15 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBlock Text="Invoice Number:" Margin="5" Grid.Column="0"/>
-            <TextBox Text="{Binding Invoice.InvoiceNumber, Mode=TwoWay}" Width="100" Margin="5" Grid.Column="1" IsEnabled="False"/>
+            <TextBox Text="{Binding Invoice.InvoiceNumber}" Width="100" Margin="5" Grid.Column="1" IsEnabled="False"/>
             <TextBlock Text="Invoice Date:" Margin="5" Grid.Column="2"/>
-            <DatePicker SelectedDate="{Binding Invoice.InvoiceDate, Mode=TwoWay}" Margin="5" Grid.Column="3" IsEnabled="False"/>
+            <DatePicker SelectedDate="{Binding Invoice.InvoiceDate}" Margin="5" Grid.Column="3" IsEnabled="False"/>
         </Grid>
         <StackPanel Margin="10" Grid.Row="1">
             <TextBlock Text="Invoice Currency:" Margin="5"/>
             <ListBox
         ItemsSource="{Binding InvoiceCurrencies}"
-        SelectedItem="{Binding Invoice.Currency, Mode=TwoWay}"
+        SelectedItem="{Binding Invoice.Currency}"
         DisplayMemberPath="Name"
         Width="150"
         Height="80"
@@ -115,7 +115,7 @@
         <StackPanel Orientation="Vertical" Margin="10" Grid.Row="3">
             <TextBlock Text="Customer:" Margin="5"/>
             <ListBox ItemsSource="{Binding Customers}"
-             SelectedItem="{Binding SelectedCustomer, Mode=TwoWay}"
+             SelectedItem="{Binding SelectedCustomer}"
              DisplayMemberPath="Name"
              Width="200"
              Height="80"

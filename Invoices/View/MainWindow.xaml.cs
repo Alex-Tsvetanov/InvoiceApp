@@ -46,7 +46,7 @@ namespace InvoiceApp.View
         }
         private void OpenAlternativeWindowButton_Click(object sender, RoutedEventArgs e)
         {
-            AlternativeMainWindow alternativeWindow = new AlternativeMainWindow(this.DataContext as MainWindowViewModel);
+            AlternativeMainWindow alternativeWindow = new AlternativeMainWindow(this.DataContext);
             alternativeWindow.Show();
         }
     }
