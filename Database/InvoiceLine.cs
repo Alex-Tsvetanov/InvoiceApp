@@ -18,6 +18,7 @@ public class InvoiceLine : ObservableObject
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
     public int InvoiceId { get; set; }
+    public Invoice Invoice { get; set; }
     private int ItemId
     {
         get => _itemId;
@@ -70,9 +71,9 @@ public class InvoiceLine : ObservableObject
         {
             builder.HasKey(x => x.Id);
             builder.Property(x => x.Id).ValueGeneratedOnAdd();
-            builder.Property(x => x.InvoiceId).IsRequired();
             builder.HasOne(i => i.Item).WithMany().HasForeignKey(i => i.ItemId);
             builder.Property(x => x.Quantity).IsRequired();
+            builder.HasOne(x => x.Invoice).WithMany(x => x.InvoiceLines).HasForeignKey(x => x.InvoiceId).OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

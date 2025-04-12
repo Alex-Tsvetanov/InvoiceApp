@@ -21,6 +21,8 @@ public class Invoice : ObservableObject
     [ForeignKey("CustomerId")] 
     public Customer Customer { get; set; }
     public ICollection<InvoiceLine> InvoiceLines { get; set; }
+    
+    [NotMapped]
     public Type InvoiceCurrency
     {
         get
@@ -47,6 +49,7 @@ public class Invoice : ObservableObject
             builder.Property(x => x.Date).IsRequired();
             builder.HasOne(x => x.Customer).WithMany().HasForeignKey(x => x.CustomerId).IsRequired();
             builder.Property(x => x.InvoiceCurrencyName).IsRequired();
+            builder.HasMany(x => x.InvoiceLines).WithOne(x => x.Invoice).HasForeignKey(x => x.InvoiceId).OnDelete(DeleteBehavior.Cascade);
             builder.Ignore(x => x.InvoiceCurrency);
         }
     }

@@ -139,6 +139,7 @@ namespace InvoiceApp.ViewModel
         {
             try
             {
+                Invoice.Customer = _selectedCustomer;
                 await databaseService.RegisterInvoice(Invoice);
                 databaseService.GeneratePdf("invoice-" + Invoice.InvoiceNumber);
                 Invoice.Clear();

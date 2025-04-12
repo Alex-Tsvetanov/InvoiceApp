@@ -68,7 +68,7 @@ public class DatabaseService
             var invoiceLinesWithInvoiceId = invoice.InvoiceLines.Select(x => new InvoiceLine
             {
                 InvoiceId = dbInvoice.Id,
-                Item = x.InvoiceItem,
+                Item = _context.Items.Find(x.InvoiceItem.Id) ?? _context.Items.Attach(x.InvoiceItem).Entity,
                 Quantity = x.Quantity
             }).ToList();
 
