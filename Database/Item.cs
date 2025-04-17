@@ -33,7 +33,7 @@ public class Item : ObservableObject
     }
 
     [NotMapped]
-    public IMoney UnitPrice
+    public MoneyBase UnitPrice
     {
         get
         {

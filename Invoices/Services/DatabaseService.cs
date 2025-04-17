@@ -114,19 +114,19 @@ public class DatabaseService
         fileStream.Close();
     }
 
-    internal IMoney getTotalPriceFor(IMoney unitPrice, decimal quantity)
+    internal MoneyBase getTotalPriceFor(MoneyBase unitPrice, decimal quantity)
     {
         var result = unitPrice * quantity;
         if (quantity > 10) result = result * (1 - _bigQuantityDiscount);
         return result;
     }
-    internal IMoney getSumPriceFor(IMoney sumPrice)
+    internal MoneyBase getSumPriceFor(MoneyBase sumPrice)
     {
         var result = sumPrice;
         if (result.Amount > 10000) result = result * (1 - _bigTotalPriceDiscount);
         return result;
     }
-    internal IMoney getPriceWithTax(IMoney price)
+    internal MoneyBase getPriceWithTax(MoneyBase price)
     {
         return price * (1 + _taxCoeficient);
     }

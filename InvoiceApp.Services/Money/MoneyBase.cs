@@ -2,14 +2,14 @@
 
 namespace InvoiceApp.Services.Money
 {
-    public abstract partial class IMoney
+    public abstract partial class MoneyBase
     {
         public decimal Amount { get; set; }
         public abstract Currency CurrencyObj { get; }
-        public static IMoney operator *(IMoney money, decimal mul)
+        public static MoneyBase operator *(MoneyBase money, decimal mul)
         {
             return money?.Multiply(mul);
         }
-        protected abstract IMoney Multiply(decimal mul);
+        protected abstract MoneyBase Multiply(decimal mul);
     }
 }

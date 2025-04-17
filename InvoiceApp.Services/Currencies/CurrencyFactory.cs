@@ -24,7 +24,7 @@ namespace InvoiceApp.Services.Currencies
             return null;
         }
 
-        public static Money<T> TryConvert<T>(this IMoney money) where T : Currency, new()
+        public static Money<T> TryConvert<T>(this MoneyBase money) where T : Currency, new()
         {
             if (money == null)
             {
@@ -52,7 +52,7 @@ namespace InvoiceApp.Services.Currencies
             }
         }
 
-        public static IMoney TryConvertGeneric(Currency Currency, decimal Amount)
+        public static MoneyBase TryConvertGeneric(Currency Currency, decimal Amount)
         {
             if (Currency is BGN)
             {

@@ -15,7 +15,7 @@ var sum2 = money1 + money3;
 
 Console.WriteLine(sum1);
 Money<USD> x = new(money1.Amount + money2.Amount);
-var m = new IMoney()
+var m = new MoneyBase()
 {
     Amount = 5,
     CurrencyObj = new BGN()

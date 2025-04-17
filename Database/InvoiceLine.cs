@@ -51,7 +51,7 @@ public class InvoiceLine : ObservableObject
     }
 
     [NotMapped]
-    public IMoney TotalPrice
+    public MoneyBase TotalPrice
     {
         get
         {

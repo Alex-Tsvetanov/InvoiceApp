@@ -32,13 +32,13 @@ public partial class ViewModelInvoice : ObservableObject
 
         [DependsOn(nameof(InvoiceItem))]
         [DependsOn(nameof(Quantity))]
-        public IMoney TotalPrice => Parent.databaseService.getTotalPriceFor(InvoiceItem?.UnitPrice, Quantity);
+        public MoneyBase TotalPrice => Parent.databaseService.getTotalPriceFor(InvoiceItem?.UnitPrice, Quantity);
 
         [DependsOn(nameof(TotalPrice))]
-        public IMoney ConvertedTotalPrice => ExchangeService.Convert(TotalPrice, Parent.Currency, Parent.databaseService.ExchangeRates);
+        public MoneyBase ConvertedTotalPrice => ExchangeService.Convert(TotalPrice, Parent.Currency, Parent.databaseService.ExchangeRates);
         
         [DependsOn(nameof(ConvertedTotalPrice))]
-        public IMoney ConvertedTotalPriceWithTax => Parent.databaseService.getPriceWithTax(ConvertedTotalPrice);
+        public MoneyBase ConvertedTotalPriceWithTax => Parent.databaseService.getPriceWithTax(ConvertedTotalPrice);
 
         public ViewModelInvoiceLine(ViewModelInvoice parent)
         {
@@ -100,7 +100,7 @@ public partial class ViewModelInvoice : ObservableObject
     }
 
     [ObservableProperty]
-    private IMoney _totalAmount;
+    private MoneyBase _totalAmount;
 
     void updateTotalAmount()
     {
@@ -135,7 +135,7 @@ public partial class ViewModelInvoice : ObservableObject
                     sum = sum + val;
             }
         }
-        SetProperty(ref _totalAmount, (IMoney)sum);
+        SetProperty(ref _totalAmount, (MoneyBase)sum);
         OnPropertyChanged(nameof(TotalAmount)); // Force UI update
     }
 

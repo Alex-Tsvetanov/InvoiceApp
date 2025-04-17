@@ -2,7 +2,7 @@
 
 namespace InvoiceApp.Services.Money
 {
-    public class Money<T> : IMoney where T : Currency, new()
+    public class Money<T> : MoneyBase where T : Currency, new()
     {
         public override Currency CurrencyObj => new T();
 
@@ -20,7 +20,7 @@ namespace InvoiceApp.Services.Money
             return new Money<T>(a.Amount * mul);
         }
 
-        protected override IMoney Multiply(decimal mul)
+        protected override MoneyBase Multiply(decimal mul)
         {
             return this * mul;
         }
